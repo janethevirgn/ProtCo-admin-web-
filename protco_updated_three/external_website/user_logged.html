@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log a Report | ProtCo</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Inter, sans-serif;
+      }
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        color: #0f172a;
+        background:
+          radial-gradient(800px 500px at 100% 0, rgba(125, 211, 252, 0.45), transparent 60%),
+          radial-gradient(700px 500px at 0 100%, rgba(96, 165, 250, 0.35), transparent 60%), #f0f7ff;
+      }
+      .card {
+        width: 100%;
+        max-width: 520px;
+        background: #fff;
+        border: 1px solid #dbe7f7;
+        border-radius: 28px;
+        padding: 36px;
+        box-shadow: 0 24px 48px -12px rgba(29, 78, 216, 0.25);
+        animation: up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+      }
+      .logo {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+        color: #fff;
+        font-size: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #7dd3fc, #2563eb);
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 6px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      p.sub {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        margin: 14px 0 6px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 13px 16px;
+        border: 1px solid #dbe7f7;
+        border-radius: 12px;
+        font-size: 14px;
+        background: #eff6ff;
+        outline: none;
+        transition: 0.2s;
+        font-family: inherit;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        background: #fff;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      }
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+      }
+      .row > div {
+        flex: 1;
+      }
+      button {
+        width: 100%;
+        margin-top: 22px;
+        padding: 14px;
+        border: none;
+        border-radius: 14px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        cursor: pointer;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
+        transition: 0.2s;
+      }
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.4);
+      }
+      .ok {
+        display: none;
+        margin-top: 18px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: #dcfce7;
+        color: #15803d;
+        font-weight: 600;
+        font-size: 14px;
+        animation: up 0.4s both;
+      }
+      .ok.warn {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      @keyframes up {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="logo">&#128221;</div>
+      <h1>Log a Report</h1>
+      <p class="sub">Report a structural problem or damage you found around the school.</p>
+      <form id="f">
+        <label>Reporter name</label>
+        <input id="reporter" required placeholder="Juan Dela Cruz" />
+        <label>Report title</label>
+        <input id="title" required placeholder="e.g. Roof leak #4" />
+        <label>Category</label>
+        <select id="cat">
+          <option>Roof</option>
+          <option>Wall / Ceiling</option>
+          <option>Windows / Doors</option>
+          <option>Electrical</option>
+          <option>Plumbing</option>
+          <option>Other</option>
+        </select>
+        <label>Description</label>
+        <textarea id="desc" required placeholder="What did you see? Where exactly?"></textarea>
+        <button type="submit">Submit Report</button>
+      </form>
+      <div class="ok" id="ok"></div>
+    </div>
+
+    <script>
+      /* ===== ProtCo bridge: sumusulat sa parehong localStorage keys na binabasa ng admin dashboard =====
+       Gumagana lang kapag ang page na ito ay nasa PAREHONG origin (domain + port) ng admin site. */
+      var K = {
+        users: "protco_data_users",
+        reports: "protco_data_reports",
+        concerns: "protco_data_concerns",
+        notifs: "protco_data_notifications",
+        current: "protco_data_current_user",
+      };
+
+      function list(k) {
+        try {
+          var v = JSON.parse(localStorage.getItem(k));
+          return Array.isArray(v) ? v : [];
+        } catch (e) {
+          return [];
+        }
+      }
+      function save(k, a) {
+        localStorage.setItem(k, JSON.stringify(a));
+      }
+      function nextId(a) {
+        return (
+          a.reduce(function (m, x) {
+            return Math.max(m, Number(x.id) || 0);
+          }, 0) + 1
+        );
+      }
+
+      function pushNotif(type, title, text) {
+        var a = list(K.notifs);
+        a.push({
+          id: nextId(a),
+          type: type,
+          title: title,
+          text: text,
+          createdAt: new Date().toISOString(),
+          read: false,
+        });
+        save(K.notifs, a);
+      }
+
+      function showOk(msg, warn) {
+        var o = document.getElementById("ok");
+        o.textContent = msg;
+        o.className = "ok" + (warn ? " warn" : "");
+        o.style.display = "block";
+      }
+
+      /* ===== SUSPENSION CHECK: sinusunod ang Suspend / Restore ng admin ===== */
+      function getMyAccount() {
+        var cur = JSON.parse(localStorage.getItem(K.current) || "null"); // sino ang gumagamit
+        if (!cur) return null;
+        // laging kunin ang LATEST na datos sa listahan ng admin, hindi ang kopya sa K.current
+        return (
+          list(K.users).filter(function (u) {
+            return u.id === cur.id;
+          })[0] || null
+        );
+      }
+
+      function isSuspended() {
+        var me = getMyAccount();
+        return !!(me && me.status === "suspended" && me.suspendedUntil > Date.now());
+      }
+
+      function suspendedMessage() {
+        var me = getMyAccount();
+        return "Suspended ang account mo hanggang " + new Date(me.suspendedUntil).toLocaleString() + ".";
+      }
+
+      /* Pagbukas pa lang ng page: itago ang form kapag suspended */
+      function lockIfSuspended() {
+        if (!isSuspended()) return;
+        document.querySelector("form").style.display = "none";
+        showOk(suspendedMessage(), true);
+      }
+
+      var cur = null;
+      try {
+        cur = JSON.parse(localStorage.getItem(K.current) || "null");
+      } catch (e) {}
+      if (cur) document.getElementById("reporter").value = [cur.firstName, cur.lastName].filter(Boolean).join(" ");
+
+      document.getElementById("f").addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (isSuspended()) {
+          showOk(suspendedMessage(), true);
+          return;
+        } // <- suspended? bawal mag-submit
+
+        var reports = list(K.reports);
+        var reporter = document.getElementById("reporter").value.trim();
+
+        var r = {
+          id: nextId(reports),
+          title: document.getElementById("title").value.trim(),
+          description: "[" + document.getElementById("cat").value + "] " + document.getElementById("desc").value.trim(),
+          reporter: reporter,
+          reporterId: cur ? cur.id : null,
+          status: "Pending",
+          createdAt: new Date().toISOString(),
+        };
+
+        reports.push(r);
+        save(K.reports, reports); // -> "Reports Logged" count + Reports page ng admin
+        pushNotif("report", "New report logged", r.title + " by " + reporter);
+
+        document.getElementById("title").value = "";
+        document.getElementById("desc").value = "";
+        showOk("Report #" + r.id + " was logged. Thank you!");
+      });
+
+      lockIfSuspended();
+    </script>
+  </body>
+</html>

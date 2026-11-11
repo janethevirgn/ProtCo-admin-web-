@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Send a Concern | ProtCo</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Inter, sans-serif;
+      }
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        color: #0f172a;
+        background:
+          radial-gradient(800px 500px at 100% 0, rgba(125, 211, 252, 0.45), transparent 60%),
+          radial-gradient(700px 500px at 0 100%, rgba(96, 165, 250, 0.35), transparent 60%), #f0f7ff;
+      }
+      .card {
+        width: 100%;
+        max-width: 520px;
+        background: #fff;
+        border: 1px solid #dbe7f7;
+        border-radius: 28px;
+        padding: 36px;
+        box-shadow: 0 24px 48px -12px rgba(29, 78, 216, 0.25);
+        animation: up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+      }
+      .logo {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+        color: #fff;
+        font-size: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #7dd3fc, #2563eb);
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 6px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      p.sub {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        margin: 14px 0 6px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 13px 16px;
+        border: 1px solid #dbe7f7;
+        border-radius: 12px;
+        font-size: 14px;
+        background: #eff6ff;
+        outline: none;
+        transition: 0.2s;
+        font-family: inherit;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        background: #fff;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      }
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+      }
+      .row > div {
+        flex: 1;
+      }
+      button {
+        width: 100%;
+        margin-top: 22px;
+        padding: 14px;
+        border: none;
+        border-radius: 14px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        cursor: pointer;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
+        transition: 0.2s;
+      }
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.4);
+      }
+      .ok {
+        display: none;
+        margin-top: 18px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: #dcfce7;
+        color: #15803d;
+        font-weight: 600;
+        font-size: 14px;
+        animation: up 0.4s both;
+      }
+      .ok.warn {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      @keyframes up {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="logo">&#9993;</div>
+      <h1>Send a Concern</h1>
+      <p class="sub">Tell the admin about a problem or question. They will be notified right away.</p>
+      <form id="f">
+        <label>Your name</label>
+        <input id="name" required placeholder="Juan Dela Cruz" />
+        <label>Email</label>
+        <input id="email" type="email" required placeholder="you@email.com" />
+        <label>Subject</label>
+        <input id="subject" required placeholder="e.g. Broken window in Room 3" />
+        <label>Message</label>
+        <textarea id="message" required placeholder="Describe your concern..."></textarea>
+        <button type="submit">Submit Concern</button>
+      </form>
+      <div class="ok" id="ok"></div>
+    </div>
+
+    <script>
+      /* ===== ProtCo bridge: sumusulat sa parehong localStorage keys na binabasa ng admin dashboard =====
+       Gumagana lang kapag ang page na ito ay nasa PAREHONG origin (domain + port) ng admin site. */
+      var K = {
+        users: "protco_data_users",
+        reports: "protco_data_reports",
+        concerns: "protco_data_concerns",
+        notifs: "protco_data_notifications",
+        current: "protco_data_current_user",
+      };
+
+      function list(k) {
+        try {
+          var v = JSON.parse(localStorage.getItem(k));
+          return Array.isArray(v) ? v : [];
+        } catch (e) {
+          return [];
+        }
+      }
+      function save(k, a) {
+        localStorage.setItem(k, JSON.stringify(a));
+      }
+      function nextId(a) {
+        return (
+          a.reduce(function (m, x) {
+            return Math.max(m, Number(x.id) || 0);
+          }, 0) + 1
+        );
+      }
+
+      function pushNotif(type, title, text) {
+        var a = list(K.notifs);
+        a.push({
+          id: nextId(a),
+          type: type,
+          title: title,
+          text: text,
+          createdAt: new Date().toISOString(),
+          read: false,
+        });
+        save(K.notifs, a);
+      }
+
+      function showOk(msg, warn) {
+        var o = document.getElementById("ok");
+        o.textContent = msg;
+        o.className = "ok" + (warn ? " warn" : "");
+        o.style.display = "block";
+      }
+
+      /* ===== SUSPENSION CHECK: sinusunod ang Suspend / Restore ng admin ===== */
+      function getMyAccount() {
+        var cur = JSON.parse(localStorage.getItem(K.current) || "null"); // sino ang gumagamit
+        if (!cur) return null;
+        // laging kunin ang LATEST na datos sa listahan ng admin, hindi ang kopya sa K.current
+        return (
+          list(K.users).filter(function (u) {
+            return u.id === cur.id;
+          })[0] || null
+        );
+      }
+
+      function isSuspended() {
+        var me = getMyAccount();
+        return !!(me && me.status === "suspended" && me.suspendedUntil > Date.now());
+      }
+
+      function suspendedMessage() {
+        var me = getMyAccount();
+        return "Suspended ang account mo hanggang " + new Date(me.suspendedUntil).toLocaleString() + ".";
+      }
+
+      /* Pagbukas pa lang ng page: itago ang form kapag suspended */
+      function lockIfSuspended() {
+        if (!isSuspended()) return;
+        document.querySelector("form").style.display = "none";
+        showOk(suspendedMessage(), true);
+      }
+
+      /* Prefill galing sa registered user (galing sa user_register.html), kung meron */
+      try {
+        var cur = JSON.parse(localStorage.getItem(K.current) || "null");
+        if (cur) {
+          document.getElementById("name").value = [cur.firstName, cur.lastName].filter(Boolean).join(" ");
+          document.getElementById("email").value = cur.email || "";
+        }
+      } catch (e) {}
+
+      document.getElementById("f").addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (isSuspended()) {
+          showOk(suspendedMessage(), true);
+          return;
+        } // <- suspended? bawal mag-submit
+
+        var name = document.getElementById("name").value.trim();
+        var subject = document.getElementById("subject").value.trim();
+        var concerns = list(K.concerns);
+
+        concerns.push({
+          id: nextId(concerns),
+          name: name,
+          email: document.getElementById("email").value.trim(),
+          subject: subject,
+          message: document.getElementById("message").value.trim(),
+          createdAt: new Date().toISOString(),
+          read: false, // read:false -> red badge sa message icon ng admin
+        });
+        save(K.concerns, concerns);
+        pushNotif("concern", "New concern", name + " sent a concern: " + subject); // -> red badge sa bell ng admin
+
+        e.target.reset();
+        showOk("Your concern was sent. The admin has been notified.");
+      });
+
+      lockIfSuspended();
+    </script>
+  </body>
+</html>
